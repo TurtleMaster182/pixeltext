@@ -1,0 +1,31 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'ro.pixeltext'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'ro.pixeltext'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '1.0.0'
+        testInstrumentationRunner 'ro.pixeltext.PngTestRunner'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    buildTypes {
+        release { minifyEnabled false }
+    }
+    lint { abortOnError true }
+}
+
+// The codec test suite is dependency-free and also runs without the Android SDK.
+tasks.register('codecTest', JavaExec) {
+    dependsOn 'compileDebugUnitTestJavaWithJavac'
+    classpath = files(layout.buildDirectory.dir('intermediates/javac/debugUnitTest/compileDebugUnitTestJavaWithJavac/classes'),
+                      layout.buildDirectory.dir('intermediates/javac/debug/compileDebugJavaWithJavac/classes'))
+    mainClass = 'ro.pixeltext.core.CodecSelfTest'
+}

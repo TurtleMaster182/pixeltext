@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="decoding">Decoding…</string>
+    <string name="no_recovered_text">No text recovered.</string>
+    <string name="decode_failed">Decoding failed.</string>
+    <string name="generate_current_text">Generate an image from the current text and compression mode.</string>
+    <string name="restored_png">Previously generated PNG restored. Integrity verified.</string>
+    <string name="restored_text">Previous decoded text restored.</string>
+    <string name="example" translatable="false">Lossless compression stores exactly the same text in fewer bits.\nAn adaptive probability model learns which byte tends to follow another.\nFrequent transitions receive shorter codes. The decoder learns the same model.\n\nRomână: Știință, creație și învățare. 日本語: こんにちは。 한국어: 안녕하세요.\nEmoji remain intact: 🤖 🌶️ 🚀\n\nLossless compression stores exactly the same text in fewer bits.\n</string>
+</resources>
