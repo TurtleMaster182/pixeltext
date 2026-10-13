@@ -4,7 +4,7 @@ An offline Android app that compresses UTF-8 text with an adaptive probability m
 
 ## Features
 
-- Type, paste, or import a UTF-8 `.txt` file.
+- Type, paste, or import a `.txt` file, preserving line breaks and blank lines. UTF-8 and UTF-16 byte-order marks are recognized automatically; older encodings can be selected explicitly.
 - **Predictive:** order-1 adaptive arithmetic coding learns the probability of each next byte from the preceding byte. No downloaded language model or language-specific dictionary is required.
 - **Automatic:** compare predictive coding, DEFLATE, and raw UTF-8; keep the smallest payload that fits.
 - **DEFLATE:** dictionary compression followed by entropy coding, useful for repeated phrases and larger documents.
@@ -16,9 +16,11 @@ An offline Android app that compresses UTF-8 text with an adaptive probability m
 
 ## Install
 
-Download [PixelText-1.0.0.apk](downloads/PixelText-1.0.0.apk), open the file on an Android device, and install it. Android **8.0/API 26 or later** is required. The supplied APK is signed with a development key. Production/store distribution requires a maintained release signing key. Its SHA-256 is recorded in [downloads/SHA256SUMS](downloads/SHA256SUMS).
+Download [PixelText-1.0.1.apk](downloads/PixelText-1.0.1.apk), open the file on an Android device, and install it. Android **8.0/API 26 or later** is required. The supplied APK is signed with a development key. Production/store distribution requires a maintained release signing key. Its SHA-256 is recorded in [downloads/SHA256SUMS](downloads/SHA256SUMS).
 
 Encode: enter text, select a mode, press **Generate 512 × 512 PNG**, then save the PNG. Decode: switch to **Decode**, press **Open PNG & decode**, and select the original file.
+
+Text-file import recognizes UTF-8, UTF-8 with a BOM, and UTF-16LE/BE with a BOM. If automatic import cannot parse a file, select the encoding used when saving it: Windows-1250, Windows-1252, ISO-8859-2, UTF-16LE, or UTF-16BE. No line endings or whitespace are removed. PNG payloads and exported `.txt` files always use UTF-8. Version 1.0.1 replaces the unhelpful `Input length = 1` error with this encoding selection.
 
 **This is a data image, not a QR code.** It must be transferred as the original PNG. A camera photograph, screenshot, resized image, edited image, JPEG, or a messenger's recompressed photo will not reliably preserve the bytes. Use a document/file attachment when sharing. Checksums detect damage; the format does not correct errors or encrypt text.
 
@@ -64,7 +66,7 @@ Native Android PNG integration tests build and run on a connected device/emulato
 ./gradlew assembleDebugAndroidTest connectedDebugAndroidTest
 ```
 
-The app also serializes, reopens, and decodes every generated PNG before enabling export. The native integration test covers nine PNG round trips: empty, multilingual, and repeated text in all modes.
+The app also serializes, reopens, and decodes every generated PNG before enabling export. Native integration tests cover empty, multilingual, and repeated text, imported UTF-16 and Windows-1250 documents, and multiline paste through the actual Android editor before PNG generation. The GitHub workflow runs these tests on an Android emulator.
 
 ## Desktop interoperability
 
@@ -91,7 +93,7 @@ cd pixeltext
 ./gradlew assembleDebug lintDebug
 ```
 
-The checked-in APK is a snapshot of version 1.0.0. New builds are available from workflow artifacts. No tokens or private signing keys are included in the repository.
+The latest checked-in APK is version 1.0.1. New builds are available from workflow artifacts. No tokens or private signing keys are included in the repository.
 
 ## Structure
 

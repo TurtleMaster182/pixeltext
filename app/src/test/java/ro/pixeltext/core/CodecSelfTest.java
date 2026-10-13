@@ -2,6 +2,8 @@ package ro.pixeltext.core;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.Charset;
+import java.nio.charset.CharacterCodingException;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.zip.CRC32;
@@ -11,10 +13,39 @@ public final class CodecSelfTest {
     private static int checks;
     private static final Random RANDOM = new Random(19044);
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         String[] examples = {"", "a", "aaaa", "Hello, world!", "\u0000\r\n\t end ",
             "Știință și creație: ăâîșț ĂÂÎȘȚ", "你好世界 日本語 한글", "🤖🌶️🚀 🧑‍💻 café e\u0301", "a\r\nb\nc\r"};
         for (String text : examples) for (TextImageCodec.Mode mode : TextImageCodec.Mode.values()) roundTrip(text, mode);
+
+        // File import → text → compression → pixels → text, including Windows multiline files.
+        for (String text : new String[]{"", "first\nsecond", "first\r\nsecond\r\n", "\nfirst\n\nsecond\n",
+                "Știință\r\n日本語\n🤖\n\nend"}) {
+            for (Charset encoding : new Charset[]{StandardCharsets.UTF_8, StandardCharsets.UTF_16LE, StandardCharsets.UTF_16BE}) {
+                byte[] body = text.getBytes(encoding);
+                byte[] bom = encoding.equals(StandardCharsets.UTF_8) ? new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF}
+                    : encoding.equals(StandardCharsets.UTF_16LE) ? new byte[]{(byte)0xFF,(byte)0xFE} : new byte[]{(byte)0xFE,(byte)0xFF};
+                byte[] file = new byte[bom.length + body.length];
+                System.arraycopy(bom,0,file,0,bom.length); System.arraycopy(body,0,file,bom.length,body.length);
+                TextFileDecoder.Imported imported = TextFileDecoder.decode(file);
+                check(text.equals(imported.text), "BOM-aware multiline import preserves every character");
+                check(encoding.name().equals(imported.encoding), "Detected encoding");
+                check(text.equals(TextFileDecoder.decode(body,encoding.name()).text), "Explicit encoding import");
+                for (TextImageCodec.Mode mode : TextImageCodec.Mode.values()) roundTrip(imported.text,mode);
+            }
+            check(text.equals(TextFileDecoder.decode(text.getBytes(StandardCharsets.UTF_8)).text), "Plain UTF-8 multiline import");
+        }
+        String legacyText = "Prima linie: România, învăţare\r\n\r\nA doua linie: creaţie\r\n";
+        byte[] legacy = legacyText.getBytes(Charset.forName("windows-1250"));
+        try { TextFileDecoder.decode(legacy); throw new AssertionError("Legacy text silently accepted as UTF-8"); }
+        catch (CharacterCodingException expected) { checks++; }
+        TextFileDecoder.Imported legacyImported = TextFileDecoder.decode(legacy,"windows-1250");
+        check(legacyText.equals(legacyImported.text), "Explicit Windows-1250 import preserves CRLF and blank lines");
+        for (TextImageCodec.Mode mode : TextImageCodec.Mode.values()) roundTrip(legacyImported.text,mode);
+        try { TextFileDecoder.decode(new byte[]{(byte)0xFF,(byte)0xFE,0x41}); throw new AssertionError("Truncated UTF-16 accepted"); }
+        catch (CharacterCodingException expected) { checks++; }
+        try { TextFileDecoder.decode(new byte[]{(byte)0xEF,(byte)0xBB,(byte)0xBF,(byte)0xC3}); throw new AssertionError("Truncated UTF-8 accepted"); }
+        catch (CharacterCodingException expected) { checks++; }
 
         for (int length : new int[]{0,1,2,3,7,8,15,31,255,256,257,1024,8192,20000,100000}) {
             byte[] bytes = new byte[length]; RANDOM.nextBytes(bytes); arithmetic(bytes);

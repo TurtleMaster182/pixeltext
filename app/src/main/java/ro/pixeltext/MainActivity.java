@@ -32,8 +32,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.nio.charset.CodingErrorAction;
+import java.nio.charset.CharacterCodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -41,6 +40,7 @@ import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import ro.pixeltext.core.TextImageCodec;
+import ro.pixeltext.core.TextFileDecoder;
 
 /** Native Android app. All compression and file access run on a worker thread. */
 public final class MainActivity extends Activity {
@@ -131,6 +131,7 @@ public final class MainActivity extends Activity {
         LinearLayout textCard = card();
         textCard.addView(label("01 / TEXT", 12, LIME));
         input = new EditText(this); input.setHint("Type or paste text…");
+        input.setId(R.id.text_input);
         input.setTextColor(FG); input.setHintTextColor(MUTED); input.setTextSize(16);
         input.setGravity(Gravity.TOP); input.setMinLines(6);
         input.setMaxLines(12); input.setSaveEnabled(false);
@@ -152,11 +153,13 @@ public final class MainActivity extends Activity {
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
         mode.setAdapter(adapter); controls.add(mode); compression.addView(mode);
         compression.addView(label("Predictive mode learns next-byte probabilities. Automatic mode compares both compressors and raw text.", 13, MUTED));
-        compression.addView(button("Generate 512 × 512 PNG", true, v -> generate()));
+        Button generate = button("Generate 512 × 512 PNG", true, v -> generate());
+        generate.setId(R.id.generate_png); compression.addView(generate);
         encodePage.addView(compression);
 
         LinearLayout result = card(); result.addView(label("03 / IMAGE", 12, LIME));
         encodePreview = preview(); result.addView(encodePreview);
+        encodePreview.setId(R.id.encoded_image);
         encodeInfo = label("786,400 bytes of compressed payload per image. Capacity depends on the text.", 13, MUTED);
         result.addView(encodeInfo);
         LinearLayout exports = row();
@@ -231,11 +234,32 @@ public final class MainActivity extends Activity {
         worker.execute(() -> {
             try (InputStream stream = getContentResolver().openInputStream(uri)) {
                 byte[] bytes = PixelPng.readBounded(stream, TextImageCodec.MAX_TEXT_BYTES);
-                String text = StandardCharsets.UTF_8.newDecoder().onMalformedInput(CodingErrorAction.REPORT)
-                        .onUnmappableCharacter(CodingErrorAction.REPORT).decode(ByteBuffer.wrap(bytes)).toString();
-                ui(() -> { input.setText(text); finish("Text imported"); });
+                try {
+                    TextFileDecoder.Imported imported = TextFileDecoder.decode(bytes);
+                    ui(() -> { input.setText(imported.text); finish("Text imported · " + imported.encoding); });
+                } catch (CharacterCodingException error) {
+                    ui(() -> { finish("Select text encoding"); chooseTextEncoding(bytes); });
+                }
             } catch (Exception error) { failure(error); }
         });
+    }
+
+    private void chooseTextEncoding(byte[] bytes) {
+        final String[] encodings = {"windows-1250", "windows-1252", "ISO-8859-2", "UTF-16LE", "UTF-16BE"};
+        String[] labels = {"Windows-1250 · Romanian / Central Europe", "Windows-1252 · Western Europe",
+            "ISO-8859-2 · Central Europe", "UTF-16 little-endian", "UTF-16 big-endian"};
+        new AlertDialog.Builder(this).setTitle(R.string.text_encoding_title)
+            .setItems(labels, (dialog, selected) -> {
+                begin("Reading text file…");
+                worker.execute(() -> {
+                    try {
+                        TextFileDecoder.Imported imported = TextFileDecoder.decode(bytes, encodings[selected]);
+                        ui(() -> { input.setText(imported.text); finish("Text imported · " + imported.encoding); });
+                    } catch (CharacterCodingException error) {
+                        ui(() -> { finish("Import failed"); error(getString(R.string.text_encoding_error)); });
+                    } catch (Exception error) { failure(error); }
+                });
+            }).setNegativeButton("Cancel", null).show();
     }
 
     private void decode(Uri uri) {

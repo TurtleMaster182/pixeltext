@@ -1,5 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <string name="text_encoding_title">File is not UTF-8 — choose its encoding</string>
+    <string name="text_encoding_error">The file is not valid in the selected encoding. Select the encoding used to save the file, or export it as UTF-8. Line breaks are preserved.</string>
     <string name="decoding">Decoding…</string>
     <string name="no_recovered_text">No text recovered.</string>
     <string name="decode_failed">Decoding failed.</string>

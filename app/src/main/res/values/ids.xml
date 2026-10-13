@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <item name="text_input" type="id" />
+    <item name="generate_png" type="id" />
+    <item name="encoded_image" type="id" />
+</resources>

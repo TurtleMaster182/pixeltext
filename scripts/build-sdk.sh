@@ -14,7 +14,7 @@ import sys
 from pathlib import Path
 project, build = map(Path, sys.argv[1:])
 manifest=(project/'app/src/main/AndroidManifest.xml').read_text().replace('${applicationId}', 'ro.pixeltext')
-manifest=manifest.replace('<manifest ', '<manifest package="ro.pixeltext" android:versionCode="1" android:versionName="1.0.0" ', 1)
+manifest=manifest.replace('<manifest ', '<manifest package="ro.pixeltext" android:versionCode="2" android:versionName="1.0.1" ', 1)
 manifest=manifest.replace('    <application', '    <uses-sdk android:minSdkVersion="26" android:targetSdkVersion="35" />\n    <application', 1)
 (build/'AndroidManifest.xml').write_text(manifest)
 PY
